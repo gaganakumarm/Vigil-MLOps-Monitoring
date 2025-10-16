@@ -1,0 +1,19 @@
+﻿# Web Framework
+fastapi
+uvicorn[standard]
+
+# Database connectivity (ORM)
+sqlalchemy
+psycopg2-binary
+pydantic
+
+# Data science dependencies
+scikit-learn
+pandas
+joblib
+
+# Core library for data and model monitoring
+evidently==0.4.32
+
+# HTTP client for Slack webhook
+requests

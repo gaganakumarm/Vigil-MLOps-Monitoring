@@ -1,0 +1,109 @@
+﻿# This file orchestrates the four core services of the Vigil MLOps Monitoring Dashboard:
+# 1. db (PostgreSQL)
+# 2. api (FastAPI Model Server)
+# 3. dashboard (Streamlit UI)
+# 4. data-feeder (Utility for setting up the model/DB)
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      # These variables are CRITICAL; they must match the values set in the .env file (DB_USER/DB_PASSWORD)
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      # Persist the database data
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      # Expose the internal DB port (useful for debugging, but not strictly needed for the app)
+      - "5432:5432"
+    # Healthcheck is important for the API to wait for the DB to be ready
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      args:
+        # Pass the Python version from the .env file to the Dockerfile build process
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    restart: always
+    environment:
+      # Pass database connection variables to the FastAPI application
+      DB_HOST: ${DB_HOST}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      # Ensure API reads model and reference data from the mounted /app/data
+      MODEL_PATH: /app/data/model.joblib
+      REFERENCE_DATA_PATH: /app/data/reference_data.csv
+    ports:
+      # Expose the FastAPI port
+      - "8000:8000"
+    volumes:
+      # Mount code and the shared 'data' folder containing model and reference data
+      - ./api:/app
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy # Wait for the DB healthcheck to pass
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    restart: always
+    environment:
+      # Pass all necessary variables for connecting to both the DB and the API service
+      DB_HOST: ${DB_HOST}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      API_HOST: api # Internal service name for the dashboard to hit the API
+    ports:
+      # Expose the Streamlit dashboard port (this is what you will tunnel/access publicly)
+      - "8501:8501"
+    volumes:
+      - ./dashboard:/app
+    depends_on:
+      api:
+        condition: service_started # Wait for the API to be up
+
+  data-feeder:
+    build:
+      context: ./data-feeder
+      dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION}
+    environment:
+      # Needed for the DB connection
+      DB_HOST: ${DB_HOST}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      # Needed for hitting the API
+      API_HOST: api
+    volumes:
+      # Mount the entire data-feeder folder
+      - ./data-feeder:/app
+      # Mount the shared 'data' folder to save the model/reference data
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    # The command will be run manually (e.g., 'docker compose run data-feeder python create_db.py')
+    # We use a placeholder here.
+    command: ["/bin/true"] 
+
+# Define volumes for persistent storage
+volumes:
+  postgres_data:

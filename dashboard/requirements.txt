@@ -1,0 +1,12 @@
+﻿# UI Framework
+streamlit
+
+# For making HTTP requests to the FastAPI backend
+requests
+
+# For data handling and visualization
+pandas
+
+# Database access
+sqlalchemy
+psycopg2-binary

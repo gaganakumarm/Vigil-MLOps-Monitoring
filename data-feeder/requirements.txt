@@ -1,0 +1,8 @@
+﻿# Database connectivity
+sqlalchemy
+psycopg2-binary
+pydantic
+pandas
+scikit-learn
+joblib
+requests

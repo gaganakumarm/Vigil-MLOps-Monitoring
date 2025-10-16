@@ -1,0 +1,18 @@
+﻿# Python Caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Dependency files
+.env
+.pytest_cache/
+pip-log.txt
+.history
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
