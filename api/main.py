@@ -42,6 +42,10 @@ class PredictionResponse(BaseModel):
 
 # --- API Endpoints ---
 
+@app.get("/status")
+async def get_status():
+    return {"status": "healthy", "model_version": MODEL_VERSION}
+
 @app.get("/")
 async def health_check():
     return {

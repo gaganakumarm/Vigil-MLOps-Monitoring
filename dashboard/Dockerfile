@@ -1,23 +1,24 @@
-﻿# Use the same base Python image
-ARG PYTHON_VERSION=3.10
-FROM python:${PYTHON_VERSION}-slim
+﻿FROM python:3.10-slim
 
+# Set working directory
 WORKDIR /app
 
-# Prevent Python from writing .pyc files and buffer I/O
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
-# Copy and install dependencies
+# Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
+# Copy all dashboard files
 COPY . .
 
-# Expose the default Streamlit port
+# Set Streamlit environment variables
+ENV STREAMLIT_SERVER_HEADLESS=true
+ENV STREAMLIT_BROWSER_GATHERUSAGESTATS=false
+ENV STREAMLIT_GLOBAL_DEVELOPMENTMODE=false
+ENV STREAMLIT_SERVER_ENABLECORS=false
+ENV STREAMLIT_SERVER_ENABLEXSFPROTECTION=false
+
+# Expose port
 EXPOSE 8501
 
-# Command to run the Streamlit app (entry point is app.py)
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Run Streamlit in production mode
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

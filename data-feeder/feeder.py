@@ -5,7 +5,12 @@ import os
 
 # --- Configuration ---
 # 'api' is the service name of the FastAPI service in the Docker network
-API_URL = os.getenv("API_HOST", "http://api:8000") 
+api_host_env = os.getenv("API_HOST", "http://api:8000")
+if api_host_env.startswith("http://") or api_host_env.startswith("https://"):
+    API_URL = api_host_env
+else:
+    # When API_HOST is a bare hostname like 'api', add scheme and default port
+    API_URL = f"http://{api_host_env}:8000"
 PREDICT_ENDPOINT = f"{API_URL}/predict"
 
 # Simulation parameters
